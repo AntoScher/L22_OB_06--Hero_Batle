@@ -95,6 +95,9 @@ class Game:
             current_time = time.time()
             elapsed_time = current_time - start_time
 
+            if not self.player.is_alive() or not self.monster.is_alive():
+                self.is_running = False
+
             if self.turn == "monster" and elapsed_time > 10:
                 self.turn = "player"
                 start_time = time.time()
@@ -145,7 +148,4 @@ class Game:
         winner_type = "игрок" if self.player.is_alive() else "компьютер"
         print(f"{winner} ({winner_type}) победил!")
 
-        pygame.quit()
-
-game = Game("Player")
-game.start()
+        pygame.quit
