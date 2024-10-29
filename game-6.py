@@ -21,10 +21,10 @@ class Hero(IHero):
         self.attack_power = 20
         self.image = pygame.image.load(image_path)
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 5.0
+        self.speed = 2.0
 
     def attack(self, other):
-        other.health -= self.attack_power
+        other.health = max(0, other.health - self.attack_power)
 
     def is_alive(self):
         return self.health > 0
@@ -34,7 +34,7 @@ class Game:
     def __init__(self, player_name):
         self.screen_width = 800
         self.screen_height = 600
-        self.min_distance = self.screen_width // 2
+        self.min_distance = ((self.screen_width ** 2 + self.screen_height ** 2) ** 0.5) / 2
         self.is_running = True
         self.turn = "monster"
 
@@ -95,6 +95,9 @@ class Game:
             current_time = time.time()
             elapsed_time = current_time - start_time
 
+            if not self.player.is_alive() or not self.monster.is_alive():
+                self.is_running = False
+
             if self.turn == "monster" and elapsed_time > 10:
                 self.turn = "player"
                 start_time = time.time()
@@ -111,16 +114,24 @@ class Game:
                 self.monster.rect.x += direction.x * self.monster.speed
                 self.monster.rect.y += direction.y * self.monster.speed
 
+                # Монстр атакует героя
+                if self.monster.rect.colliderect(self.player.rect):
+                    self.monster.attack(self.player)
+                    print(f"{self.monster.name} атаковал {self.player.name}. У {self.player.name} осталось {self.player.health} здоровья.")
+                    start_time = time.time()  # Перезапуск таймера после атаки
+
             # Защита от выхода за границы экрана для монстра
             self.monster.rect.x = max(0, min(self.monster.rect.x, self.screen_width - self.monster.rect.width))
             self.monster.rect.y = max(0, min(self.monster.rect.y, self.screen_height - self.monster.rect.height))
 
-            if self.turn == "player" and keys[pygame.K_SPACE]:
+            if self.turn == "player" and keys[pygame.K_SPACE] and self.player.rect.colliderect(self.monster.rect):
                 self.player.attack(self.monster)
                 print(f"{self.player.name} атаковал {self.monster.name}. У {self.monster.name} осталось {self.monster.health} здоровья.")
                 if not self.monster.is_alive():
                     self.is_running = False
+                start_time = time.time()  # Перезапуск таймера после атаки
 
+            # Обновление экрана и отображение текущего здоровья
             self.screen.fill((0, 0, 0))
             self.screen.blit(self.player.image, self.player.rect)
             self.screen.blit(self.monster.image, self.monster.rect)

@@ -21,7 +21,7 @@ class Hero(IHero):
         self.attack_power = 20
         self.image = pygame.image.load(image_path)
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 5.0
+        self.speed = 2.0
 
     def attack(self, other):
         other.health = max(0, other.health - self.attack_power)
@@ -34,7 +34,7 @@ class Game:
     def __init__(self, player_name):
         self.screen_width = 800
         self.screen_height = 600
-        self.min_distance = self.screen_width // 2
+        self.min_distance = ((self.screen_width ** 2 + self.screen_height ** 2) ** 0.5) / 2
         self.is_running = True
         self.turn = "monster"
 
@@ -148,4 +148,7 @@ class Game:
         winner_type = "игрок" if self.player.is_alive() else "компьютер"
         print(f"{winner} ({winner_type}) победил!")
 
-        pygame.quit
+        pygame.quit()
+
+game = Game("Player")
+game.start()
