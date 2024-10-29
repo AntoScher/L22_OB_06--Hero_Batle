@@ -1,3 +1,4 @@
+
 import pygame
 import random
 import time
@@ -24,7 +25,7 @@ class Hero(IHero):
         self.speed = 5.0
 
     def attack(self, other):
-        other.health -= self.attack_power
+        other.health = max(0, other.health - self.attack_power)
 
     def is_alive(self):
         return self.health > 0
@@ -47,7 +48,7 @@ class Game:
 
     def random_positions(self):
         while True:
-            player_x, player_y = random.randint(50, self.screen_width - 50), random.randint(50, self.screen_height - 50)
+            player_x, player_y = random.randint(50, self.screen_width - 50), random.randint(50, self.screen_height -50)
             monster_x, monster_y = random.randint(50, self.screen_width - 50), random.randint(50, self.screen_height - 50)
             distance = ((player_x - monster_x) ** 2 + (player_y - monster_y) ** 2) ** 0.5
             if distance >= self.min_distance:
@@ -76,11 +77,10 @@ class Game:
             self.is_running = False
 
     def start(self):
+        self.initialize_heroes()
         self.choose_weapon()
         clock = pygame.time.Clock()
         font = pygame.font.Font(None, 36)
-        self.initialize_heroes()
-        start_time = time.time()
 
         while self.is_running:
             for event in pygame.event.get():
@@ -92,51 +92,34 @@ class Game:
             self.player.rect.x = mouse_x
             self.player.rect.y = mouse_y
 
-            current_time = time.time()
-            elapsed_time = current_time - start_time
-
-            if self.turn == "monster" and elapsed_time > 10:
-                self.turn = "player"
-                start_time = time.time()
-                self.initialize_heroes()  # Перезапуск раунда с новыми позициями
-            elif self.turn == "player" and elapsed_time > 10:
-                self.turn = "monster"
-                start_time = time.time()
-                self.initialize_heroes()  # Перезапуск раунда с новыми позициями
+            if self.turn == "player":
+                if keys[pygame.K_SPACE]:  # Игрок атакует при нажатии пробела
+                    self.player.attack(self.monster)
+                    self.turn = "monster"
 
             if self.turn == "monster":
-                direction = pygame.math.Vector2(self.player.rect.x - self.monster.rect.x, self.player.rect.y - self.monster.rect.y)
-                if direction.length() > 0:
-                    direction = direction.normalize()
-                self.monster.rect.x += direction.x * self.monster.speed
-                self.monster.rect.y += direction.y * self.monster.speed
+                if self.monster.is_alive() and self.player.is_alive():
+                    self.monster.attack(self.player)
+                    self.turn = "player"
 
-            # Защита от выхода за границы экрана для монстра
-            self.monster.rect.x = max(0, min(self.monster.rect.x, self.screen_width - self.monster.rect.width))
-            self.monster.rect.y = max(0, min(self.monster.rect.y, self.screen_height - self.monster.rect.height))
-
-            if self.turn == "player" and keys[pygame.K_SPACE]:
-                self.player.attack(self.monster)
-                print(f"{self.player.name} атаковал {self.monster.name}. У {self.monster.name} осталось {self.monster.health} здоровья.")
-                if not self.monster.is_alive():
-                    self.is_running = False
-
-            self.screen.fill((0, 0, 0))
+            # Отрисовка
+            self.screen.fill((255, 255, 255))  # Очистка экрана
             self.screen.blit(self.player.image, self.player.rect)
             self.screen.blit(self.monster.image, self.monster.rect)
 
-            player_text = font.render(f"{self.player.name}: {self.player.health} HP", True, (255, 255, 255))
-            monster_text = font.render(f"{self.monster.name}: {self.monster.health} HP", True, (255, 255, 255))
-            self.screen.blit(player_text, (50, 50))
-            self.screen.blit(monster_text, (50, 100))
+            # Отображение здоровья
+            health_text = font.render(f"{self.player.name} HP: {self.player.health}", True, (0, 0, 0))
+            self.screen.blit(health_text, (10, 10))
+            health_text = font.render(f"{self.monster.name} HP: {self.monster.health}", True, (0, 0, 0))
+            self.screen.blit(health_text, (10, 50))
 
-            pygame.display.flip()
-            clock.tick(60)
-
-        winner = self.player.name if self.player.is_alive() else self.monster.name
-        print(f"{winner} победил!")
+            pygame.display.flip()  # Обновление экрана
+            clock.tick(60)  # Ограничение FPS
 
         pygame.quit()
 
-game = Game("Player")
-game.start()
+# Пример запуска игры
+if __name__ == "__main__":  
+    player_name = input("Введите имя персонажа: ")
+    game = Game(player_name)
+    game.start()
